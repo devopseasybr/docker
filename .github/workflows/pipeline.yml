@@ -33,16 +33,17 @@ jobs:
 
       - name: Salvar Imagem em Tarball
         run: |
-          docker save devopseasybr/${{ inputs.folder }}:${{ inputs.tag }} -o ${{ inputs.folder }}.tar
+          docker save devopseasybr/${{ inputs.folder }}:${{ inputs.tag }} -o ./${{ inputs.folder }}.tar
 
       - name: Remover Imagem Local (para economizar espaço/evitar conflitos)
         run: |
           docker rmi devopseasybr/${{ inputs.folder }}:${{ inputs.tag }}
       - name: Upload de Artefato (Imagem Tarball)
-        uses: actions/upload-artifact@v4
+        id: upload_artifact
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: docker-image
-          path: ${{ inputs.folder }}.tar
+          path: ./${{ inputs.folder }}.tar
           retention-days: 1
 
   Test:
