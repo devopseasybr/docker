@@ -52,7 +52,7 @@ jobs:
       image: devopseasybr/trivy:0.61.0
     steps:
       - name: Download de Artefato (Imagem Tarball)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.3.0
         with:
           name: docker-image
 
@@ -77,7 +77,7 @@ jobs:
       image: docker:latest
     steps:
       - name: Download de Artefato (Imagem Tarball)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.3.0
         with:
           name: docker-image
       - name: Carregar Imagem do Tarball
