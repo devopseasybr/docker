@@ -29,39 +29,32 @@ jobs:
 
       - name: Construir Imagem Docker
         run: |
-          docker build -t devopseasybr/${{ inputs.folder }}:${{ inputs.tag }} -f ${{ inputs.folder }}/Dockerfile ${{ inputs.folder }}
+          docker build -t devopseasybr/${{ inputs.folder }}:${{ inputs.tag }} -f ${{ inputs.folder }}/Dockerfile ./${{ inputs.folder }}
 
       - name: Salvar Imagem em Tarball
         run: |
           docker save devopseasybr/${{ inputs.folder }}:${{ inputs.tag }} -o ${{ inputs.folder }}.tar
-          chmod 644 ${{ inputs.folder }}.tar # Garante permissões de leitura
 
       - name: Remover Imagem Local (para economizar espaço/evitar conflitos)
         run: |
           docker rmi devopseasybr/${{ inputs.folder }}:${{ inputs.tag }}
-      - name: Permissão do arquivo
-        run: |
-          chmod 644 ${{ inputs.folder }}.tar
       - name: Upload de Artefato (Imagem Tarball)
         uses: actions/upload-artifact@v4
         with:
-          name: docker-image-tarball # Nome do artefato deve ser consistente
+          name: docker-image
           path: ${{ inputs.folder }}.tar
-          # retention-days: 1 # Opcional: define por quanto tempo o artefato fica disponível
+          retention-days: 1
 
   Test:
     runs-on: ubuntu-latest
     needs: [Build] # Depende do job 'Build'
     container:
       image: devopseasybr/trivy:0.61.0
-      # credentials: # Removido, pois não é necessário para o container Trivy
-      #   username: ${{ secrets.AZURE_USER }}
-      #   password: ${{ secrets.AZURE_PASSWORD }}
     steps:
       - name: Download de Artefato (Imagem Tarball)
         uses: actions/download-artifact@v4
         with:
-          name: docker-image-tarball # Deve corresponder EXATAMENTE ao nome no upload
+          name: docker-image
 
       - name: Carregar Imagem do Tarball
         run: |
@@ -82,29 +75,21 @@ jobs:
     needs: [Test] # Depende do job 'Test'
     container:
       image: docker:latest
-      # credentials: # Não é necessário aqui, pois o 'docker login' lida com isso.
-      #   username: ${{ secrets.USER }}
-      #   password: ${{ secrets.PASSWORD }}
     steps:
       - name: Download de Artefato (Imagem Tarball)
         uses: actions/download-artifact@v4
         with:
-          name: docker-image-tarball # Deve corresponder EXATAMENTE ao nome no upload
-
+          name: docker-image
       - name: Carregar Imagem do Tarball
         run: |
           docker image load -i ${{ inputs.folder }}.tar
 
-      - name: Login no Azure Container Registry
+      - name: Login no Docker Container Registry
         run: |
-          # Use o echo para passar a senha de forma segura via stdin
           echo "${{ secrets.PASSWORD }}" | docker login ${{ secrets.REGISTRY }} --username ${{ secrets.USER }} --password-stdin
 
       - name: Publicar Imagem no Registry
         run: |
-          # Primeiro, tagar a imagem com o nome do registry de destino
-          docker tag devopseasybr/${{ inputs.folder }}:${{ inputs.tag }} ${{ secrets.REGISTRY }}/devops/${{ inputs.folder }}:${{ inputs.tag }}
-          # Depois, fazer o push
           docker push ${{ secrets.REGISTRY }}/devops/${{ inputs.folder }}:${{ inputs.tag }}
 
       - name: Remover Imagem Local (após o deploy)
