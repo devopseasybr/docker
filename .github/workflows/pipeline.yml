@@ -39,7 +39,9 @@ jobs:
       - name: Remover Imagem Local (para economizar espaço/evitar conflitos)
         run: |
           docker rmi devopseasybr/${{ inputs.folder }}:${{ inputs.tag }}
-
+      - name: Permissão do arquivo
+        run: |
+          chmod 644 ${{ inputs.folder }}.tar
       - name: Upload de Artefato (Imagem Tarball)
         uses: actions/upload-artifact@v4
         with:
